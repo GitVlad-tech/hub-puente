@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Hub · puerta</title>
+<style>
+:root{color-scheme:dark}
+html,body{margin:0;height:100%;background:#07080a;color:#e8e6e1;font:16px/1.5 -apple-system,system-ui,sans-serif}
+main{min-height:100%;display:grid;place-items:center;padding:24px;box-sizing:border-box;text-align:center}
+.card{max-width:420px;width:100%}
+h1{font-weight:600;font-size:26px;margin:0 0 8px}
+p{color:#a9a69e;margin:8px 0}
+button,input{font:inherit;border-radius:12px;border:1px solid #2a303b;background:#12151b;color:#e8e6e1;padding:12px 16px;width:100%;box-sizing:border-box;margin-top:10px}
+button{background:#e0b25a;color:#1a1408;border:0;font-weight:600;cursor:pointer}
+button.sec{background:#12151b;color:#e8e6e1;border:1px solid #2a303b;font-weight:500}
+#st{min-height:24px}
+</style></head>
+<body><main><div class="card">
+<h1>Hub de estudio</h1>
+<p id="st">Buscando tu PC…</p>
+<div id="setup" hidden>
+  <p>Pega el código de acceso (solo la primera vez en este dispositivo).</p>
+  <input id="code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="código">
+  <button id="save">Guardar</button>
+</div>
+<div id="act" hidden>
+  <button id="open">Abrir hub</button>
+  <button id="retry" class="sec">Reintentar</button>
+  <button id="forget" class="sec">Olvidar código</button>
+</div>
+</div></main>
+<script>
+(function(){
+  var K="hubk", st=document.getElementById("st");
+  function get(){try{return localStorage.getItem(K)}catch(e){return null}}
+  function set(v){try{localStorage.setItem(K,v)}catch(e){}}
+  function del(){try{localStorage.removeItem(K)}catch(e){}}
+  var m=location.hash.match(/[#&]k=([^&]+)/);
+  if(m){ set(decodeURIComponent(m[1])); history.replaceState(null,"",location.pathname+location.search); }
+
+  function show(id,on){document.getElementById(id).hidden=!on}
+  async function target(){
+    var r=await fetch("url.json?"+Date.now(),{cache:"no-store"});
+    if(!r.ok) throw new Error("sin url.json");
+    var j=await r.json(); if(!j.url) throw new Error("sin url");
+    return j.url.replace(/\/$/,"");
+  }
+  async function go(auto){
+    var tok=get();
+    if(!tok){ st.textContent="Falta el código de acceso."; show("setup",true); show("act",false); return; }
+    show("setup",false); show("act",true);
+    st.textContent="Buscando tu PC…";
+    try{
+      var u=await target();
+      st.textContent="Conectando…";
+      var dest=u+"/?k="+encodeURIComponent(tok);
+      document.getElementById("open").onclick=function(){location.href=dest};
+      if(auto) location.replace(dest);
+      else st.textContent="Listo. Pulsa «Abrir hub».";
+    }catch(e){
+      st.textContent="No encuentro el enlace. ¿El PC está encendido? Espera un minuto y reintenta.";
+    }
+  }
+  document.getElementById("save").onclick=function(){var v=document.getElementById("code").value.trim(); if(v){set(v); go(true);}};
+  document.getElementById("retry").onclick=function(){go(true)};
+  document.getElementById("forget").onclick=function(){del(); go(false)};
+  go(true);
+})();
+</script></body></html>
